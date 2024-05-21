@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>買い物リストアプリ</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        function toggleHistory() {
+            var historySection = document.getElementById('purchase-history');
+            var openButton = document.getElementById('open-history-btn');
+            var closeButton = document.getElementById('close-history-btn');
+
+            if (historySection.style.display === 'none') {
+                historySection.style.display = 'block';
+                openButton.style.display = 'none';
+                closeButton.style.display = 'inline';
+            } else {
+                historySection.style.display = 'none';
+                openButton.style.display = 'inline';
+                closeButton.style.display = 'none';
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>買い物リストアプリ</h1>
+        
+        <h2>買い物リスト</h2>
+        <ul class="list">
+            {% for item in shopping_list %}
+            <li class="list-item">
+                <span>{{ item.item_name }}</span> - 
+                <span>数量: {{ item.item_quantity }}</span>, 
+                <span>在庫: {{ item.current_stock }}</span>,
+                <span>期限: {{ item.purchase_deadline }}</span>, 
+                <span>メモ: {{ item.memo }}</span>
+                <a href="{{ url_for('delete', id=item.id) }}" class="delete-btn">購入済み</a>
+            </li>
+            {% else %}
+            <li class="list-item">買い物リストは空です。</li>
+            {% endfor %}
+        </ul>
+
+        <h2>新しいアイテムを追加</h2>
+        <form action="{{ url_for('add') }}" method="post" class="add-form">
+            <label for="item_name">商品名:</label>
+            <input type="text" id="item_name" name="item_name" required>
+            <label for="item_quantity">数量:</label>
+            <input type="number" id="item_quantity" name="item_quantity" required>
+            <label for="current_stock">現在の在庫:</label>
+            <input type="number" id="current_stock" name="current_stock">
+            <label for="purchase_deadline">購入期限:</label>
+            <select id="purchase_deadline" name="purchase_deadline">
+                <option value="tomorrow">明日まで</option>
+                <option value="next_week">1週間を目処に</option>
+                <option value="2_3_days">2～3日の内に</option>
+            </select>
+            <label for="memo">メモ:</label>
+            <input type="text" id="memo" name="memo">
+            <button type="submit">追加</button>
+        </form>
+
+        <button id="open-history-btn" onclick="toggleHistory()">購入履歴一覧を開く</button>
+        <button id="close-history-btn" onclick="toggleHistory()" style="display:none;">購入履歴一覧を閉じる</button>
+
+        <div id="purchase-history" style="display:none;">
+            <h2>購入履歴</h2>
+            <ul class="history-list">
+                {% for record in purchase_history %}
+                <li class="history-item">
+                    <span>{{ record.item_name }}</span> - 
+                    <span>数量: {{ record.item_quantity }}</span>, 
+                    <span>購入日時: {{ record.purchase_date }}</span>
+                    <form action="{{ url_for('delete_purchase', id=record.id) }}" method="post" class="delete-form">
+                        <button type="submit" class="delete-btn">削除</button>
+                    </form>
+                </li>
+                {% else %}
+                <li class="history-item">購入履歴はありません。</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
