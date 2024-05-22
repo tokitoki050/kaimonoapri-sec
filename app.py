@@ -1,12 +1,18 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # セッション管理用の秘密鍵
 
-# データベースファイルの絶対パスに変更
 DATABASE = 'C:/Users/toki2/onedrive/desktop/kaimonoapri/shopping_list_app.db'
+
+# データベースファイルの存在と権限をチェック
+if not os.path.exists(DATABASE):
+    print(f"Database file does not exist: {DATABASE}")
+if not os.access(DATABASE, os.W_OK):
+    print(f"Database file is not writable: {DATABASE}")
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
