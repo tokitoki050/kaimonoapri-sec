@@ -5,7 +5,8 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # セッション管理用の秘密鍵
 
-DATABASE = 'shopping_list_app.db'
+# データベースファイルの絶対パスに変更
+DATABASE = 'C:/Users/toki2/onedrive/desktop/kaimonoapri/shopping_list_app.db'
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
