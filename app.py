@@ -68,13 +68,19 @@ def add():
     if not item_name or not item_quantity:
         return redirect(url_for('index'))
 
-    conn = get_db_connection()
-    conn.execute('''
-        INSERT INTO shopping_list (item_name, item_quantity, current_stock, purchase_deadline, memo)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (item_name, item_quantity, current_stock, purchase_deadline, memo))
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO shopping_list (item_name, item_quantity, current_stock, purchase_deadline, memo)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (item_name, item_quantity, current_stock, purchase_deadline, memo))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()  # ロールバックしてデータベースの一貫性を保つ
+        print(f"An error occurred: {e}")  # ログにエラーメッセージを出力
+        return render_template('error.html', error_message=str(e))  # エラーページを表示
+    finally:
+        conn.close()
 
     return redirect(url_for('index'))
 
@@ -89,13 +95,19 @@ def delete(id):
     if item:
         item_name, item_quantity = item['item_name'], item['item_quantity']
         purchase_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        conn.execute('''
-            INSERT INTO purchase_history (item_name, item_quantity, purchase_date)
-            VALUES (?, ?, ?)
-        ''', (item_name, item_quantity, purchase_date))
-        conn.execute('DELETE FROM shopping_list WHERE id = ?', (id,))
-        conn.commit()
-    conn.close()
+        try:
+            conn.execute('''
+                INSERT INTO purchase_history (item_name, item_quantity, purchase_date)
+                VALUES (?, ?, ?)
+            ''', (item_name, item_quantity, purchase_date))
+            conn.execute('DELETE FROM shopping_list WHERE id = ?', (id,))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"An error occurred: {e}")
+            return render_template('error.html', error_message=str(e))
+        finally:
+            conn.close()
 
     return redirect(url_for('index'))
 
@@ -105,9 +117,15 @@ def delete_purchase(id):
         return redirect(url_for('login'))
     
     conn = get_db_connection()
-    conn.execute('DELETE FROM purchase_history WHERE id = ?', (id,))
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute('DELETE FROM purchase_history WHERE id = ?', (id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"An error occurred: {e}")
+        return render_template('error.html', error_message=str(e))
+    finally:
+        conn.close()
 
     return redirect(url_for('index'))
 
