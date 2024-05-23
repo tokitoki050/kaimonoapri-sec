@@ -8,12 +8,6 @@ app.secret_key = 'your_secret_key'  # セッション管理用の秘密鍵
 
 DATABASE = 'C:/Users/toki2/onedrive/desktop/kaimonoapri/shopping_list_app.db'
 
-# データベースファイルの存在と権限をチェック
-if not os.path.exists(DATABASE):
-    print(f"Database file does not exist: {DATABASE}")
-if not os.access(DATABASE, os.W_OK):
-    print(f"Database file is not writable: {DATABASE}")
-
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
