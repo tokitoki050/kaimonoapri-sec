@@ -4,15 +4,16 @@ import sqlite3
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # セッション管理用の秘密鍵
+app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')  # セッション管理用の秘密鍵
 
-DATABASE = os.environ.get('DATABASE_PATH', 'C:/Users/toki2/onedrive/desktop/kaimonoapri/shopping_list_app.db')
+DATABASE_PATH = os.environ.get('DATABASE_PATH', 'C:/Users/toki2/onedrive/desktop/kaimonoapri/shopping_list_app.db')
+
 
 def get_db_connection():
-    if not os.path.exists(DATABASE):
-        app.logger.error(f"Database file does not exist: {DATABASE}")
-        raise FileNotFoundError(f"Database file does not exist: {DATABASE}")
-    conn = sqlite3.connect(DATABASE)
+    if not os.path.exists(DATABASE_PATH):
+        app.logger.error(f"Database file does not exist: {DATABASE_PATH}")
+        raise FileNotFoundError(f"Database file does not exist: {DATABASE_PATH}")
+    conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
