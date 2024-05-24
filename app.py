@@ -1,14 +1,17 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3
 from datetime import datetime
-import os
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # セッション管理用の秘密鍵
 
-DATABASE = 'C:/Users/toki2/onedrive/desktop/kaimonoapri/shopping_list_app.db'
+DATABASE = os.environ.get('DATABASE_PATH', 'C:/Users/toki2/onedrive/desktop/kaimonoapri/shopping_list_app.db')
 
 def get_db_connection():
+    if not os.path.exists(DATABASE):
+        app.logger.error(f"Database file does not exist: {DATABASE}")
+        raise FileNotFoundError(f"Database file does not exist: {DATABASE}")
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
@@ -78,7 +81,7 @@ def add():
         conn.commit()
     except Exception as e:
         conn.rollback()  # ロールバックしてデータベースの一貫性を保つ
-        print(f"An error occurred: {e}")  # ログにエラーメッセージを出力
+        app.logger.error(f"An error occurred: {e}")  # ログにエラーメッセージを出力
         return render_template('error.html', error_message=str(e))  # エラーページを表示
     finally:
         conn.close()
@@ -105,7 +108,7 @@ def delete(id):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            print(f"An error occurred: {e}")
+            app.logger.error(f"An error occurred: {e}")
             return render_template('error.html', error_message=str(e))
         finally:
             conn.close()
@@ -123,7 +126,7 @@ def delete_purchase(id):
         conn.commit()
     except Exception as e:
         conn.rollback()
-        print(f"An error occurred: {e}")
+        app.logger.error(f"An error occurred: {e}")
         return render_template('error.html', error_message=str(e))
     finally:
         conn.close()
