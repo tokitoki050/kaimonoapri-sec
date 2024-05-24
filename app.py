@@ -6,39 +6,41 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # セッション管理用の秘密鍵
 
-# デプロイ環境用のデータベースファイルのパスを設定
-DATABASE_PATH = os.environ.get('DATABASE_PATH', 'shopping_list_app.db')
+# データベースファイルのパスを環境変数から取得する
+DATABASE_PATH = os.environ.get('DATABASE_PATH', '/tmp/shopping_list_app.db')
 
 def get_db_connection():
-    if not os.path.exists(DATABASE_PATH):
-        app.logger.error(f"Database file does not exist: {DATABASE_PATH}")
-        raise FileNotFoundError(f"Database file does not exist: {DATABASE_PATH}")
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 def create_tables():
-    conn = get_db_connection()
-    with conn:
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS shopping_list (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                item_name TEXT NOT NULL,
-                item_quantity INTEGER NOT NULL,
-                current_stock INTEGER,
-                purchase_deadline TEXT,
-                memo TEXT
-            )
-        ''')
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS purchase_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                item_name TEXT NOT NULL,
-                item_quantity INTEGER NOT NULL,
-                purchase_date TEXT NOT NULL
-            )
-        ''')
-    conn.close()
+    # データベースファイルが存在しない場合は作成する
+    if not os.path.exists(DATABASE_PATH):
+        conn = sqlite3.connect(DATABASE_PATH)
+        with conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS shopping_list (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    item_name TEXT NOT NULL,
+                    item_quantity INTEGER NOT NULL,
+                    current_stock INTEGER,
+                    purchase_deadline TEXT,
+                    memo TEXT
+                )
+            ''')
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS purchase_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    item_name TEXT NOT NULL,
+                    item_quantity INTEGER NOT NULL,
+                    purchase_date TEXT NOT NULL
+                )
+            ''')
+        conn.close()
+
+# アプリケーションの起動時にデータベースファイルが存在しない場合、作成する
+create_tables()
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -135,5 +137,4 @@ def delete_purchase(id):
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    create_tables()
     app.run(debug=True)
