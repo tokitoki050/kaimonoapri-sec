@@ -6,11 +6,8 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # セッション管理用の秘密鍵
 
-# アプリのルートディレクトリのパスを取得
-root_dir = os.path.dirname(os.path.abspath(__file__))
-
-# データベースファイルの相対パスを設定
-DATABASE_PATH = os.path.join(root_dir, 'shopping_list_app.db')
+# デプロイ環境用のデータベースファイルのパスを設定
+DATABASE_PATH = os.environ.get('DATABASE_PATH', 'shopping_list_app.db')
 
 def get_db_connection():
     if not os.path.exists(DATABASE_PATH):
