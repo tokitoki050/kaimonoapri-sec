@@ -4,10 +4,13 @@ import sqlite3
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')  # セッション管理用の秘密鍵
+app.secret_key = 'your_secret_key'  # セッション管理用の秘密鍵
 
-DATABASE_PATH = os.environ.get('DATABASE_PATH', 'C:/Users/toki2/onedrive/desktop/kaimonoapri/shopping_list_app.db')
+# アプリのルートディレクトリのパスを取得
+root_dir = os.path.dirname(os.path.abspath(__file__))
 
+# データベースファイルの相対パスを設定
+DATABASE_PATH = os.path.join(root_dir, 'shopping_list_app.db')
 
 def get_db_connection():
     if not os.path.exists(DATABASE_PATH):
