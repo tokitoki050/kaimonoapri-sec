@@ -1,8 +1,8 @@
 import json
 import os
 
-# 環境変数からJSONファイルのパスを取得
-JSON_FILE_PATH = os.path.join(os.environ['ONEDRIVE'], 'shopping_list.json')
+# 新しいファイルの絶対パスを設定
+JSON_FILE_PATH = "C:\\Users\\toki2\\OneDrive\\shopping_list.json"
 
 def load_data():
     # JSONファイルが存在するか確認
