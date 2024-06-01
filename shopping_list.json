@@ -1,0 +1,13 @@
+{
+    "shopping_list": [
+        {
+            "id": 1,
+            "item_name": "\u7d0d\u8c46",
+            "item_quantity": "5",
+            "current_stock": "1",
+            "purchase_deadline": "tomorrow",
+            "memo": "\u3072\u304d\u308f\u308a\u7d0d\u8c46"
+        }
+    ],
+    "purchase_history": []
+}

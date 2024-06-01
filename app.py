@@ -1,46 +1,10 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, session
-import sqlite3
 from datetime import datetime
+from data_manager import load_data, save_data
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # セッション管理用の秘密鍵
-
-# データベースファイルのパスを環境変数から取得する
-DATABASE_PATH = os.environ.get('DATABASE_PATH', '/tmp/shopping_list_app.db')
-
-def get_db_connection():
-    conn = sqlite3.connect(DATABASE_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def create_tables():
-    # データベースファイルが存在しない場合は作成する
-    if not os.path.exists(DATABASE_PATH):
-        conn = sqlite3.connect(DATABASE_PATH)
-        with conn:
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS shopping_list (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    item_name TEXT NOT NULL,
-                    item_quantity INTEGER NOT NULL,
-                    current_stock INTEGER,
-                    purchase_deadline TEXT,
-                    memo TEXT
-                )
-            ''')
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS purchase_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    item_name TEXT NOT NULL,
-                    item_quantity INTEGER NOT NULL,
-                    purchase_date TEXT NOT NULL
-                )
-            ''')
-        conn.close()
-
-# アプリケーションの起動時にデータベースファイルが存在しない場合、作成する
-create_tables()
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -55,10 +19,9 @@ def login():
 def index():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
-    conn = get_db_connection()
-    shopping_list = conn.execute('SELECT * FROM shopping_list').fetchall()
-    purchase_history = conn.execute('SELECT * FROM purchase_history').fetchall()
-    conn.close()
+    data = load_data()
+    shopping_list = data['shopping_list']
+    purchase_history = data['purchase_history']
     return render_template('index.html', shopping_list=shopping_list, purchase_history=purchase_history)
 
 @app.route('/add', methods=('POST',))
@@ -76,18 +39,19 @@ def add():
         return redirect(url_for('index'))
 
     try:
-        conn = get_db_connection()
-        conn.execute('''
-            INSERT INTO shopping_list (item_name, item_quantity, current_stock, purchase_deadline, memo)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (item_name, item_quantity, current_stock, purchase_deadline, memo))
-        conn.commit()
+        data = load_data()
+        data['shopping_list'].append({
+            "id": len(data['shopping_list']) + 1,
+            "item_name": item_name,
+            "item_quantity": item_quantity,
+            "current_stock": current_stock,
+            "purchase_deadline": purchase_deadline,
+            "memo": memo
+        })
+        save_data(data)
     except Exception as e:
-        conn.rollback()  # ロールバックしてデータベースの一貫性を保つ
         app.logger.error(f"An error occurred: {e}")  # ログにエラーメッセージを出力
         return render_template('error.html', error_message=str(e))  # エラーページを表示
-    finally:
-        conn.close()
 
     return redirect(url_for('index'))
 
@@ -96,25 +60,22 @@ def delete(id):
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     
-    conn = get_db_connection()
-    item = conn.execute('SELECT * FROM shopping_list WHERE id = ?', (id,)).fetchone()
-
-    if item:
-        item_name, item_quantity = item['item_name'], item['item_quantity']
-        purchase_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        try:
-            conn.execute('''
-                INSERT INTO purchase_history (item_name, item_quantity, purchase_date)
-                VALUES (?, ?, ?)
-            ''', (item_name, item_quantity, purchase_date))
-            conn.execute('DELETE FROM shopping_list WHERE id = ?', (id,))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            app.logger.error(f"An error occurred: {e}")
-            return render_template('error.html', error_message=str(e))
-        finally:
-            conn.close()
+    try:
+        data = load_data()
+        item = next((item for item in data['shopping_list'] if item['id'] == id), None)
+        if item:
+            purchase_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            data['purchase_history'].append({
+                "id": len(data['purchase_history']) + 1,
+                "item_name": item['item_name'],
+                "item_quantity": item['item_quantity'],
+                "purchase_date": purchase_date
+            })
+            data['shopping_list'] = [i for i in data['shopping_list'] if i['id'] != id]
+            save_data(data)
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+        return render_template('error.html', error_message=str(e))
 
     return redirect(url_for('index'))
 
@@ -123,16 +84,13 @@ def delete_purchase(id):
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     
-    conn = get_db_connection()
     try:
-        conn.execute('DELETE FROM purchase_history WHERE id = ?', (id,))
-        conn.commit()
+        data = load_data()
+        data['purchase_history'] = [i for i in data['purchase_history'] if i['id'] != id]
+        save_data(data)
     except Exception as e:
-        conn.rollback()
         app.logger.error(f"An error occurred: {e}")
         return render_template('error.html', error_message=str(e))
-    finally:
-        conn.close()
 
     return redirect(url_for('index'))
 
